@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <style>
+    body {
+      background-color: black;
+    }
+
+    .container {
+      display: grid;
+      gap: 10px;
+      grid-template-rows: repeat(25, auto);
+      grid-auto-flow: column;
+    }
+
+    .container div {
+      border-radius: 50%;
+      background-color: grey;
+      width: 35px;
+      height: 35px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      color: white;
+      font-size: 10px;
+      cursor: pointer;
+      user-select: none;
+      transform: rotate(-90deg);
+    }
+  </style>
+</head>
+
+<body>
+  <div class="container"></div>
+
+  <script>
+    const container = document.querySelector(".container");
+// Load saved data (or use an empty object if nothing is saved)
+let color_coding = JSON.parse(localStorage.getItem("color_coding")) || {};
+
+for (let i = 1; i <= 6 * 25; i++) {
+    const cell = document.createElement("div");
+    cell.className = "cell";
+    cell.textContent = ((i - 1) % 25) + 1;
+
+    // Restore saved color
+    cell.style.backgroundColor = color_coding[i] || "grey";
+
+cell.onclick = function () {
+    if (cell.style.backgroundColor === "green") {
+
+        if (!confirm("Are you sure you want to change this cell back to grey?")) {
+            return; // User clicked Cancel
+        }
+
+        cell.style.backgroundColor = "grey";
+        color_coding[i] = "grey";
+    } else {
+        cell.style.backgroundColor = "green";
+        color_coding[i] = "green";
+    }
+
+    localStorage.setItem("color_coding", JSON.stringify(color_coding));
+};;
+
+    container.appendChild(cell);
+}  </script>
+</body>
+</html>
