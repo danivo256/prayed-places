@@ -2,68 +2,110 @@
 <html>
 <head>
   <style>
+    /* Set the overall background of the page to black */
     body {
       background-color: black;
     }
 
+    /* Styling for the main grid container */
     .container {
       display: grid;
-      gap: 10px;
-      grid-template-rows: repeat(25, 75px);
-      grid-auto-flow: column;
+      gap: 10px; /* Space between the grid cells */
+      /* Create exactly 25 rows, each 75px tall */
+      grid-template-rows: repeat(25, 75px); 
+      /* Make elements flow down columns first, then create new columns */
+      grid-auto-flow: column; 
     }
 
+    /* Styling for the individual grid cells */
     .container div {
-      border-radius: 50%;
-      background-color: grey;
+      border-radius: 50%; /* Make the cells circular */
+      background-color: grey; /* Default cell color */
       width: 55px;
       height: 55px;
       display: flex;
-      justify-content: center;
-      align-items: center;
-      color: white;
+      justify-content: center; /* Center text horizontally */
+      align-items: center; /* Center text vertically */
+      color: white; /* Text color */
       font-size: 30px;
-      cursor: pointer;
-      user-select: none;
-      transform: rotate(-90deg);
+      cursor: pointer; /* Change cursor to pointer to indicate clickability */
+      user-select: none; /* Prevent accidental text highlighting when clicking */
+      transform: rotate(-90deg); /* Rotate the text sideways */
     }
   </style>
 </head>
 
 <body>
+  <!-- Container where the JavaScript will inject the grid cells -->
   <div class="container"></div>
 
   <script>
+    // Get the container element from the DOM
     const container = document.querySelector(".container");
-// Load saved data (or use an empty object if nothing is saved)
-let color_coding = JSON.parse(localStorage.getItem("color_coding")) || {};
 
-for (let i = 1; i <= 6 * 25; i++) {
-    const cell = document.createElement("div");
-    cell.className = "cell";
-    cell.textContent = ((i - 1) % 25) + 1;
+    // Load saved data from localStorage. 
+    // If nothing is saved yet, initialize it as an empty object '{}'.
+    let color_coding = JSON.parse(localStorage.getItem("color_coding")) || {};
 
-    // Restore saved color
-    cell.style.backgroundColor = color_coding[i] || "grey";
+    // Loop to create 150 cells (6 columns of 25 rows)
+    // Note: Be careful, maximum cells can be 280 as per the macrodroid webhook limit (3800 char)
+    for (let i = 1; i <= 6 * 25; i++) {
+        
+        // Create a new div element for the cell
+        const cell = document.createElement("div");
+        cell.className = "cell";
+        
+        // Number the cells from 1 to 25 repeatedly for each column
+        cell.textContent = ((i - 1) % 25) + 1;
 
-cell.onclick = function () {
-    if (cell.style.backgroundColor === "green") {
+        // Restore the saved color from localStorage, or default to "grey" if not found
+        cell.style.backgroundColor = color_coding[i] || "grey";
 
-        if (!confirm("Are you sure you want to change this cell back to grey?")) {
-            return; // User clicked Cancel
-        }
+        // Define what happens when a cell is clicked
+        cell.onclick = function () {
+            
+            // Check if the cell is currently green
+            if (cell.style.backgroundColor === "green") {
 
-        cell.style.backgroundColor = "grey";
-        color_coding[i] = "grey";
-    } else {
-        cell.style.backgroundColor = "green";
-        color_coding[i] = "green";
-    }
+                // Prompt user for confirmation before resetting to grey
+                if (!confirm("Are you sure you want to change this cell back to grey?")) {
+                    return; // Exit function if user clicks Cancel
+                }
 
-    localStorage.setItem("color_coding", JSON.stringify(color_coding));
-};;
+                // If confirmed, change visually to grey
+                cell.style.backgroundColor = "grey";
+                
+                // Note: If you want to remove the green state from local storage completely, 
+                // you might want to delete it from the object or set it to grey explicitly:
+                // color_coding[i] = "grey"; 
+                // delete color_coding[i]; (recommended to save string size for the webhook)
 
-    container.appendChild(cell);
-}  </script>
+            } else {
+                // If it's not green (it's grey), turn it green and update the state object
+                cell.style.backgroundColor = "green";
+                color_coding[i] = "green";
+            }
+
+            // Save the updated state object back to local storage so it persists on reload
+            localStorage.setItem("color_coding", JSON.stringify(color_coding));
+            
+            // Send the updated data to the MacroDroid Webhook via a POST request
+            fetch("https://trigger.macrodroid.com/b7778721-f32d-4644-8b12-08844ab6ef9e/Prayed_places_data", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify({
+                    color_coding: color_coding
+                })
+            })
+            .then(response => console.log("Sent successfully")) // Log success
+            .catch(error => console.error("Error sending data:", error)); // Log any errors
+        };
+
+        // Append the newly created and configured cell to the DOM container
+        container.appendChild(cell);
+    }  
+  </script>
 </body>
 </html>
