@@ -105,7 +105,28 @@
 
         // Append the newly created and configured cell to the DOM container
         container.appendChild(cell);
-    }  
+    }
+    // Listen for the browser to detect that the internet connection is back
+window.addEventListener('online', function() {
+    console.log("Internet restored. Syncing data to MacroDroid...");
+    
+    // Grab the most up-to-date data from local storage
+    let current_data = JSON.parse(localStorage.getItem("color_coding")) || {};
+
+    // Fire the webhook again
+    fetch("https://trigger.macrodroid.com/b7778721-f32d-4644-8b12-08844ab6ef9e/Prayed_places_data", {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+            color_coding: current_data
+        })
+    })
+    .then(response => console.log("Offline data synced successfully!"))
+    .catch(error => console.error("Error syncing data:", error));
+});
+
   </script>
 </body>
 </html>
