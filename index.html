@@ -1,4 +1,3 @@
-Serial number & circles dont allogn why
 <!DOCTYPE html>
 <html>
 <head>
@@ -68,7 +67,8 @@ Serial number & circles dont allogn why
     let noOfElementsInRow = 25;
     let noOfElementsInColumn = 6;
     container.style.gridTemplateRows = `repeat(${noOfElementsInRow}, 75px)`;
-    sn.style.gridTemplateColumns = `repeat(${noOfElementsInColumn}, 55px)`;
+    //sn.style.gridTemplateColumns = `repeat(${noOfElementsInColumn}, 55px)`;
+    sn.style.gridTemplateColumns = `repeat(${noOfElementsInColumn}, 1fr)`;
 
     // Loop to create noOfElementsInRow*noOfElementsInColumn cells (6 columns of noOfElementsInRow rows)
     // Note: Be careful, maximum cells can be 280 as per the macrodroid webhook limit (3800 char)
