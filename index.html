@@ -1,3 +1,4 @@
+Serial number & circles dont allogn why
 <!DOCTYPE html>
 <html>
 <head>
@@ -9,98 +10,114 @@
     .sn {
       display: grid;
       gap: 10px;
+      /*flex-direction: row;*/
       color: white;
       font-size: 30px;
-      justify-items: center; /* Centers the serial numbers in their 75px columns */
-      align-items: center; 
-      margin-bottom: 10px; /* Small space between numbers and the grid */
+      /*flex-basis: 75px;*/
     }
-    .sn div {
+    .sn div{
       display: flex;
       transform: rotate(-90deg);
       user-select: none;
       justify-content: center;
-      align-items: center;
+      align-content: center;
+      
     }
 
     /* Styling for the main grid container */
     .container {
       display: grid;
-      gap: 10px; 
+      gap: 10px; /* Space between the grid cells */
+      /* Create exactly noOfElementsInRow rows, each 75px tall */
+      /*grid-template-rows: repeat(noOfElementsInRow, 75px);*/ 
+      /* Make elements flow down columns first, then create new columns */
       grid-auto-flow: column; 
-      justify-items: center; /* Centers the 55px circles inside the 75px columns */
-      align-items: center;
     }
 
     /* Styling for the individual grid cells */
     .container div {
-      border-radius: 50%; 
-      background-color: grey; 
+      border-radius: 50%; /* Make the cells circular */
+      background-color: grey; /* Default cell color */
       width: 55px;
       height: 55px;
       display: flex;
-      justify-content: center; 
-      align-items: center; 
-      color: white; 
+      justify-content: center; /* Center text horizontally */
+      align-items: center; /* Center text vertically */
+      color: white; /* Text color */
       font-size: 30px;
-      cursor: pointer; 
-      user-select: none; 
-      transform: rotate(-90deg); 
+      cursor: pointer; /* Change cursor to pointer to indicate clickability */
+      user-select: none; /* Prevent accidental text highlighting when clicking */
+      transform: rotate(-90deg); /* Rotate the text sideways */
     }
   </style>
 </head>
 
 <body>
   <div class="sn"></div>
+  <!-- Container where the JavaScript will inject the grid cells -->
   <div class="container"></div>
 
   <script>
+    // Get the container element from the DOM
     const container = document.querySelector(".container");
     const sn = document.querySelector(".sn");
 
+    // Load saved data from localStorage. 
+    // If nothing is saved yet, initialize it as an empty object '{}'.
     let color_coding = JSON.parse(localStorage.getItem("color_coding")) || {};
     let noOfElementsInRow = 25;
     let noOfElementsInColumn = 6;
-    
     container.style.gridTemplateRows = `repeat(${noOfElementsInRow}, 75px)`;
-    
-    // Set matching fixed column widths for both grids so they align perfectly
-    container.style.gridTemplateColumns = `repeat(${noOfElementsInColumn}, 75px)`;
-    sn.style.gridTemplateColumns = `repeat(${noOfElementsInColumn}, 75px)`;
+    sn.style.gridTemplateColumns = `repeat(${noOfElementsInColumn}, 55px)`;
 
+    // Loop to create noOfElementsInRow*noOfElementsInColumn cells (6 columns of noOfElementsInRow rows)
+    // Note: Be careful, maximum cells can be 280 as per the macrodroid webhook limit (3800 char)
     for (let i = 1; i <= noOfElementsInColumn * noOfElementsInRow; i++) {
         
+        // Create a new div element for the cell
         const cell = document.createElement("div");
         cell.className = "cell";
         
+        // Number the cells from 1 to noOfElementsInRow repeatedly for each column
         cell.textContent = ((i - 1) % noOfElementsInRow) + 1;
-        
-        if (cell.textContent == "1") {
-            const snCell = document.createElement("div");
-            snCell.className = "snCell";
-            // More robust math for finding the current column number
-            snCell.textContent = Math.floor((i - 1) / noOfElementsInRow) + 1;
-            sn.appendChild(snCell);
-        }        
-        
+if (cell.textContent == "1") {
+    const snCell = document.createElement("div");
+    snCell.className = "snCell";
+    snCell.textContent = ((i - 1) % noOfElementsInColumn) + 1;
+
+    sn.appendChild(snCell);
+}        // Restore the saved color from localStorage, or default to "grey" if not found
         cell.style.backgroundColor = color_coding[i] || "grey";
 
+        // Define what happens when a cell is clicked
         cell.onclick = function () {
+            
+            // Check if the cell is currently green
             if (cell.style.backgroundColor === "green") {
+
+                // Prompt user for confirmation before resetting to grey
                 if (!confirm("Are you sure you want to change this cell back to grey?")) {
-                    return; 
+                    return; // Exit function if user clicks Cancel
                 }
+
+                // If confirmed, change visually to grey
                 cell.style.backgroundColor = "grey";
                 
-                // Deleting instead of setting to 'grey' to save webhook string size
-                delete color_coding[i]; 
+                // Note: If you want to remove the green state from local storage completely, 
+                // you might want to delete it from the object or set it to grey explicitly:
+                // color_coding[i] = "grey"; 
+                // delete color_coding[i]; (recommended to save string size for the webhook)
+
             } else {
+                // If it's not green (it's grey), turn it green and update the state object
                 cell.style.backgroundColor = "green";
                 color_coding[i] = "green";
             }
 
+            // Save the updated state object back to local storage so it persists on reload
             localStorage.setItem("color_coding", JSON.stringify(color_coding));
             
+            // Send the updated data to the MacroDroid Webhook via a POST request
             fetch("https://trigger.macrodroid.com/b7778721-f32d-4644-8b12-08844ab6ef9e/Prayed_places_data", {
                 method: "POST",
                 headers: {
@@ -110,30 +127,34 @@
                     color_coding: color_coding
                 })
             })
-            .then(response => console.log("Sent successfully")) 
-            .catch(error => console.error("Error sending data:", error)); 
+            .then(response => console.log("Sent successfully")) // Log success
+            .catch(error => console.error("Error sending data:", error)); // Log any errors
         };
 
+        // Append the newly created and configured cell to the DOM container
         container.appendChild(cell);
-    }
-    
-    window.addEventListener('online', function() {
-        console.log("Internet restored. Syncing data to MacroDroid...");
         
-        let current_data = JSON.parse(localStorage.getItem("color_coding")) || {};
+    }
+    // Listen for the browser to detect that the internet connection is back
+window.addEventListener('online', function() {
+    console.log("Internet restored. Syncing data to MacroDroid...");
+    
+    // Grab the most up-to-date data from local storage
+    let current_data = JSON.parse(localStorage.getItem("color_coding")) || {};
 
-        fetch("https://trigger.macrodroid.com/b7778721-f32d-4644-8b12-08844ab6ef9e/Prayed_places_data", {
-            method: "POST",
-            headers: {
-                "Content-Type": "application/json"
-            },
-            body: JSON.stringify({
-                color_coding: current_data
-            })
+    // Fire the webhook again
+    fetch("https://trigger.macrodroid.com/b7778721-f32d-4644-8b12-08844ab6ef9e/Prayed_places_data", {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+            color_coding: current_data
         })
-        .then(response => console.log("Offline data synced successfully!"))
-        .catch(error => console.error("Error syncing data:", error));
-    });
+    })
+    .then(response => console.log("Offline data synced successfully!"))
+    .catch(error => console.error("Error syncing data:", error));
+});
 
   </script>
 </body>
